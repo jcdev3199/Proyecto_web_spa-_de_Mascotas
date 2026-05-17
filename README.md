@@ -13,6 +13,7 @@ Personal (Recepción/Groomers): Cuentas creadas exclusivamente por el Administra
 Clientes: Auto-registro mediante formulario tradicional o Google OAuth 2.0.
 
 2.Seguridad
+
 Políticas de Password: Validación de complejidad (8+ caracteres, alfanuméricos y caracteres especiales) con Medidor de Fuerza integrado en el Frontend.
 
 Protección de Datos: Encriptación de credenciales mediante BCrypt.
