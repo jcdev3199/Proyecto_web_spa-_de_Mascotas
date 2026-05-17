@@ -1,0 +1,32 @@
+proymascotas/src/main/resources/application.properties
+.env
+
+# --- BACKEND (Spring Boot) ---
+proymascotas/target/
+proymascotas/.mvn/
+proymascotas/mvnw
+proymascotas/mvnw.cmd
+proymascotas/.sts4-cache
+
+# --- FRONTEND (Vue.js / Vite) ---
+frontend-petspa/node_modules/
+frontend-petspa/dist/
+frontend-petspa/.vite/
+frontend-petspa/npm-debug.log*
+
+# --- IDEs Y EDITORES ---
+.vscode/
+.idea/
+*.iws
+*.iml
+*.ipr
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+Thumbs.db
+.DS_Store
+db/
+*.log
