@@ -13,6 +13,11 @@ import UserList from '../views/admin/UserList.vue'
 import UserManagement from '../views/admin/UserManagement.vue'
 import PerfilEmpleado from '../views/PerfilEmpleado.vue'
 
+//semana1 
+import SolicitarCita from '../views/SolicitarCita.vue'
+import MisMascotas from '../views/MisMascotas.vue';
+import groomerdashboard from '../views/GroomerDashboard.vue'
+import historialCliente from '../views/HistorialCliente.vue'
 
 const routes = [
   { path: '/', name: 'Home', component: Home },
@@ -80,7 +85,31 @@ const routes = [
     component: PerfilEmpleado, 
     meta: { requiresAuth: true } 
   },
-
+  {
+  path: '/solicitar-cita',
+  name: 'SolicitarCita',
+  component: SolicitarCita
+  },
+  {
+  path: '/mis-mascotas',
+  name: 'MisMascotas',
+  component: MisMascotas
+  },
+  {
+  path: '/recepcion',
+  name: 'RecepcionDashboard',
+  component: () => import('../views/RecepcionDashboard.vue')
+  },
+  {
+  path: '/groomer',
+  name: 'GroomerDashboard',
+  component: groomerdashboard
+  },
+  {
+  path: '/historial-cliente',
+  name: 'HistorialCliente',
+  component: historialCliente
+  }
 ]
 
 const router = createRouter({

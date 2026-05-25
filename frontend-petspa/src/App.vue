@@ -15,13 +15,13 @@ const reiniciarTemporizador = () => {
   clearTimeout(timer);
   if (authState.user) {
     //  "EXPIRO"
-    // 60000 ms = 10 minuto
+    // 900000 ms = 10 minuto
     timer = setTimeout(() => {
       alert("Tu sesión ha expirado por inactividad.");
       authState.logout();
       // Redirección forzada para evitar pantalla en blanco
       window.location.href = 'http://localhost:5173/';
-    }, 60000); 
+    }, 900000); 
   }
 };
 
@@ -42,12 +42,12 @@ const resetTimer = () => {
   clearTimeout(logoutTimer);
   if (authState.user) {
     // "AUSENCIA"
-    // 60000 ms = 10 minuto
+    // 900000 ms = 10 minuto
     logoutTimer = setTimeout(() => {
       alert("Sesión cerrada por inactividad de 30 minutos.");
       authState.logout();
       window.location.href = 'http://localhost:5173/';
-    }, 60000); 
+    }, 900000); 
   }
 };
 

@@ -2,6 +2,7 @@ package com.spamascotas.service;
 
 import com.spamascotas.dto.ClienteDTO;
 import com.spamascotas.dto.GroomerDTO;
+import com.spamascotas.dto.PerfilUpdateRequest;
 import com.spamascotas.dto.UserUpdateRequest;
 import com.spamascotas.dto.UsuarioDTO;
 import com.spamascotas.model.*;
@@ -22,6 +23,8 @@ public class UsuarioService {
     @Autowired private GroomerRepository groomerRepository;
     @Autowired private ClienteRepository clienteRepository;
     @Autowired private PasswordEncoder passwordEncoder;
+
+    @Autowired private RecepcionistaRepository recepcionistaRepository;
 
     @Transactional
     public void actualizarUsuarioCompleto(UserUpdateRequest request) {
@@ -131,7 +134,38 @@ public class UsuarioService {
     }
 
 
+    @Transactional
+    public void actualizarDatosEmpleado(Long id, PerfilUpdateRequest request) {
+        // Tu entidad usa Integer para el ID, casteamos el Long de la ruta
+        Usuario u = usuarioRepository.findById(id.intValue())
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado con ID: " + id));
 
+        // Si es Groomer (Rol ID 3), actualizamos su tabla específica
+        if (u.getRol() != null && u.getRol().getId_rol() == 3) {
+            Groomer g = groomerRepository.findByUsuario(u).orElse(new Groomer());
+            g.setUsuario(u);
+            
+            // Mapeo directo usando la estructura exacta de tu entidad Groomer
+            g.setNombres(request.getNombre());
+            g.setApellidos(request.getApellido());
+            g.setTelefono(request.getTelefono());
+            g.setEspecialidad(request.getEspecialidad());
+            g.setTurno(request.getTurno());
+            g.setCapacidad_simultanea(request.getCapacidadSimultanea());
+            g.setHora_entrada(request.getHoraEntrada());
+            g.setHora_salida(request.getHoraSalida());
+            
+            groomerRepository.save(g);
+        }
+        
+        // Si es Recepcionista (Rol ID 2), manejamos su persistencia
+        if (u.getRol() != null && u.getRol().getId_rol() == 2) {
+            Recepcionista r = recepcionistaRepository.findByUsuario(u).orElse(new Recepcionista());
+            r.setUsuario(u);
+            r.setTurno(request.getTurno());
+            recepcionistaRepository.save(r);
+        }
+    }
     
 }
 

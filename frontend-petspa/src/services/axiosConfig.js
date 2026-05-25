@@ -7,7 +7,7 @@ const isLocal = window.location.hostname === 'localhost' || window.location.host
 // ACTUALIZADO CON TU NUEVO LINK DE BACKEND
 const backendURL = isLocal 
     ? 'http://localhost:8080' 
-    : 'https://cord-assured-artists-believed.trycloudflare.com';
+    : 'https://kinase-athletes-prototype-incl.trycloudflare.com';
 
 axios.defaults.baseURL = backendURL;
 axios.defaults.withCredentials = true; 

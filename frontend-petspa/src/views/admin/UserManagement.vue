@@ -89,9 +89,10 @@ const nuevoEmp = ref({
   username: '',
   email: '',
   password: '',
-  rol: 'Groomer', // Valor por defecto
+  rol: 'Groomer', 
   telefono: '',
   especialidad: '',
+  capacidadSimultanea: 1,
   turno: 'Mañana',
   horaEntrada: '08:00',
   horaSalida: '14:00'
@@ -103,18 +104,16 @@ const registrarEmpleado = async () => {
   try {
     const token = localStorage.getItem('token');
     
-    // Mapeo para que el Backend reciba exactamente lo que espera
-    const rolParaBackend = nuevoEmp.value.rol === 'Recepción' ? 'Recepcionista' : nuevoEmp.value.rol;
-
     const payload = {
       nombres: nuevoEmp.value.nombres,
       apellidos: nuevoEmp.value.apellidos,
       username: nuevoEmp.value.username,
       email: nuevoEmp.value.email,
       password: nuevoEmp.value.password,
-      rol: nuevoEmp.value.rol, // Se envía dentro del JSON
+      rol: nuevoEmp.value.rol,
       telefono: nuevoEmp.value.telefono,
       especialidad: nuevoEmp.value.rol === 'Groomer' ? nuevoEmp.value.especialidad : null,
+      capacidadSimultanea: nuevoEmp.value.rol === 'Groomer' ? nuevoEmp.value.capacidadSimultanea : null,
       turno: nuevoEmp.value.turno,
       horaEntrada: nuevoEmp.value.horaEntrada,
       horaSalida: nuevoEmp.value.horaSalida
@@ -122,9 +121,8 @@ const registrarEmpleado = async () => {
 
     console.log(">>> [DEBUG] Enviando Payload:", payload);
 
-    // IMPORTANTE: Agregamos 'params' para solucionar el error 400
     await axios.post('/api/auth/registrar-personal', payload, {
-      params: { rol: nuevoEmp.value.rol }, // <--- ESTO SOLUCIONA EL ERROR 400
+      params: { rol: nuevoEmp.value.rol },
       headers: { Authorization: `Bearer ${token}` }
     });
 

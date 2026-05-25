@@ -13,7 +13,7 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import java.time.LocalTime; // Asegúrate de tener este import
+import java.time.LocalTime;
 import dev.samstevens.totp.secret.DefaultSecretGenerator;
 import dev.samstevens.totp.qr.QrData;
 import dev.samstevens.totp.qr.ZxingPngQrGenerator;
@@ -44,11 +44,9 @@ public class AuthService {
     private static final String PASSWORD_PATTERN = "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=!*#])(?=\\S+$).{8,}$";
 
 public LoginResponse autenticar(LoginRequest request, HttpServletRequest httpRequest) {
-    // 1. Búsqueda de usuario
     Usuario usuario = usuarioRepository.findByEmail(request.getEmail())
             .orElseThrow(() -> new RuntimeException("Credenciales inválidas"));
 
-    // 2. Lógica de desbloqueo automático si ya pasó el tiempo (Regla 6)
     if (usuario.getBloqueado_hasta() != null && LocalDateTime.now().isAfter(usuario.getBloqueado_hasta())) {
         usuario.setIntentos_fallidos(0);
         usuario.setBloqueado_hasta(null);
@@ -56,40 +54,34 @@ public LoginResponse autenticar(LoginRequest request, HttpServletRequest httpReq
         System.out.println(">>> [SEGURIDAD] Tiempo de bloqueo cumplido para: " + usuario.getEmail());
     }
 
-    // 3. Verificación de cuenta bloqueada (Regla 6)
     if (usuario.getBloqueado_hasta() != null && usuario.getBloqueado_hasta().isAfter(LocalDateTime.now())) {
-        registrarLog(usuario, "INTENTO_EN_CUENTA_BLOQUEADA", httpRequest); // Auditoría
+        registrarLog(usuario, "INTENTO_EN_CUENTA_BLOQUEADA", httpRequest);
         throw new RuntimeException("Cuenta bloqueada hasta: " + usuario.getBloqueado_hasta());
     }
 
-    // 4. VALIDACIÓN DE ESTADO (Regla 3.2 - Verificación de Identidad)
     if (!"Activo".equals(usuario.getEstado())) {
-        registrarLog(usuario, "LOGIN_DENEGADO_ESTADO_PENDIENTE", httpRequest); // Auditoría
+        registrarLog(usuario, "LOGIN_DENEGADO_ESTADO_PENDIENTE", httpRequest);
         throw new RuntimeException("Tu cuenta está '" + usuario.getEstado() + "'. Revisa tu correo para activarla.");
     }
 
-    // 5. Verificación de Contraseña
     if (passwordEncoder.matches(request.getPassword(), usuario.getPassword_hash())) {
         usuario.setIntentos_fallidos(0);
         usuario.setBloqueado_hasta(null);
         usuarioRepository.save(usuario); 
 
-        // CASO A: Si es Administrador, requiere 2FA (Regla 3.2)
+
         if ("Administrador".equals(usuario.getRol().getNombreRol())) {
             registrarLog(usuario, "LOGIN_PASO_1_EXITOSO_2FA_REQUERIDO", httpRequest);
-            // IMPORTANTE: Pasamos token null, pero incluimos el ID y datos del usuario
             return new LoginResponse(null, usuario.getId_usuario(), usuario.getEmail(), usuario.getUsername(), "Administrador");
         }
 
-        // CASO B: Login exitoso para Clientes o Personal
-        registrarLog(usuario, "LOGIN_EXITOSO", httpRequest); // Trazabilidad
+        registrarLog(usuario, "LOGIN_EXITOSO", httpRequest);
         String token = jwtUtil.generarToken(usuario.getEmail(), usuario.getRol().getNombreRol());
         
-        // Enviamos el Token y el ID_USUARIO (para que el perfil funcione)
         return new LoginResponse(token, usuario.getId_usuario(), usuario.getEmail(), usuario.getUsername(), usuario.getRol().getNombreRol());
         
     } else {
-        // 6. Manejo de intentos fallidos y bloqueo (Regla 6)
+
         int nuevosIntentos = usuario.getIntentos_fallidos() + 1;
         usuario.setIntentos_fallidos(nuevosIntentos);
 
@@ -110,10 +102,8 @@ public LoginResponse autenticar(LoginRequest request, HttpServletRequest httpReq
         String ip = request.getRemoteAddr();
         String navegador = request.getHeader("User-Agent");
         
-        // 1. Crear el objeto de Auditoría con los datos del Requerimiento 5.2
         Auditoria log = new Auditoria();
         
-        // Convertimos el ID a Long para evitar el conflicto de tipos
         log.setIdUsuario(usuario.getId_usuario().longValue());
         log.setEmail(usuario.getEmail());
         log.setRol(usuario.getRol().getNombreRol());
@@ -122,10 +112,8 @@ public LoginResponse autenticar(LoginRequest request, HttpServletRequest httpReq
         log.setNavegador(navegador);
         log.setAccion(accion);
 
-        // 2. Guardar en la base de datos (Persistencia permanente)
         auditoriaRepository.save(log);
         
-        // 3. Debug en consola (Regla 5.2)
         System.out.println("\n********** LOG GUARDADO EN BD (REGLA 5.2) **********");
         System.out.println("USUARIO: " + usuario.getEmail() + " (" + usuario.getRol().getNombreRol() + ")");
         System.out.println("ACCIÓN:  " + accion);
@@ -197,18 +185,14 @@ public LoginResponse autenticar(LoginRequest request, HttpServletRequest httpReq
         return "Registro inicial exitoso. Por favor, revisa tu correo para activar la cuenta (Válido por 10 min).";
     }
 
-// 1. Asegúrate de tener esta anotación al inicio de la clase AuthService
 
-
-// 2. Reemplaza la función enviarCorreoActivacion por esta
 private void enviarCorreoActivacion(String destinatario, String token) {
     try {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setTo(destinatario);
         message.setSubject("Activación de cuenta - Pet Spa UMSA");
         
-        // Link hacia la nueva pantalla de "Establecer Contraseña" en Vue
-        String frontendUrl = "https://relatives-identical-particle-traditions.trycloudflare.com"; 
+        String frontendUrl = "https://reveals-those-mistakes-slip.trycloudflare.com"; 
         String link = frontendUrl + "/configurar-password?token=" + token;
         
         message.setText("¡Bienvenido! Haz clic aquí para establecer tu contraseña y activar tu cuenta: \n" + link);
@@ -218,10 +202,8 @@ private void enviarCorreoActivacion(String destinatario, String token) {
     }
 }
 
-// Reemplaza tu función registrarPersonal por esta versión corregida
 @Transactional
 public String registrarPersonal(java.util.Map<String, Object> payload, String rolNombre) {
-    // 1. Extraemos los datos base del Map (Nivel Raíz)
     String username = (String) payload.get("username");
     String email = (String) payload.get("email");
     String password = (String) payload.get("password");
@@ -230,14 +212,13 @@ public String registrarPersonal(java.util.Map<String, Object> payload, String ro
     usuario.setUsername(username);
     usuario.setEmail(email);
     usuario.setPassword_hash(passwordEncoder.encode(password));
-    usuario.setEstado("Activo"); // Personal interno se registra activo por defecto[cite: 2]
+    usuario.setEstado("Activo");
     
     Rol rol = rolRepository.findByNombreRol(rolNombre)
             .orElseThrow(() -> new RuntimeException("Rol no encontrado: " + rolNombre));
     usuario.setRol(rol);
     Usuario guardado = usuarioRepository.save(usuario);
 
-    // 2. Si es Groomer, extraemos los datos del objeto anidado enviado por Vue[cite: 2, 3]
     if (rolNombre.equalsIgnoreCase("Groomer") && payload.containsKey("groomer")) {
         java.util.Map<String, Object> gMap = (java.util.Map<String, Object>) payload.get("groomer");
         
@@ -245,14 +226,12 @@ public String registrarPersonal(java.util.Map<String, Object> payload, String ro
             Groomer groomer = new Groomer();
             groomer.setUsuario(guardado);
             
-            // Priorizamos el teléfono del objeto groomer, si no existe usamos el de la raíz[cite: 2]
             String tel = gMap.get("telefono") != null ? (String) gMap.get("telefono") : (String) payload.get("telefono");
             groomer.setTelefono(tel);
             
             groomer.setEspecialidad((String) gMap.get("especialidad"));
             groomer.setTurno((String) gMap.get("turno"));
             
-            // Validación y parseo de horarios[cite: 2]
             try {
                 String entrada = (String) gMap.get("hora_entrada");
                 String salida = (String) gMap.get("hora_salida");
@@ -307,19 +286,16 @@ public String registrarPersonal(java.util.Map<String, Object> payload, String ro
 
         return verifier.isValidCode(usuario.getTwoFaSecret(), codigo);
     }
-    // Asegúrate de tener inyectado el ClienteRepository al inicio de la clase
 
     @Transactional
     public String actualizarPerfilCliente(Integer idUsuario, PerfilUpdateRequest request, HttpServletRequest httpRequest) {
         
-        // Ahora que idUsuario es Integer, findById no se quejará
         Usuario usuario = usuarioRepository.findById(idUsuario)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
         Cliente cliente = clienteRepository.findByUsuario(usuario)
                 .orElseThrow(() -> new RuntimeException("Datos de cliente no encontrados"));
 
-        // Actualización de campos (Regla 4: Datos Obligatorios)
         cliente.setNombre(request.getNombre());
         cliente.setApellido(request.getApellido());
         cliente.setCi(request.getCi());
@@ -328,7 +304,6 @@ public String registrarPersonal(java.util.Map<String, Object> payload, String ro
 
         clienteRepository.save(cliente);
 
-        // REGISTRO DE AUDITORÍA (Regla 5.2)
         registrarLog(usuario, "PERFIL_PROPIO_ACTUALIZADO", httpRequest);
 
         return "Perfil actualizado con éxito";
@@ -343,15 +318,8 @@ public String registrarPersonal(java.util.Map<String, Object> payload, String ro
     }   
 
 
-
-// Asegúrate de inyectar los repositorios necesarios al inicio de la clase
-
-
-
-
 @Transactional
 public void crearEmpleado(RegistroEmpleadoRequest request, HttpServletRequest httpRequest) {
-    // 1. Validar duplicados
     if (usuarioRepository.existsByUsername(request.getUsername())) {
         throw new RuntimeException("Error: El username '" + request.getUsername() + "' ya existe.");
     }
@@ -359,22 +327,18 @@ public void crearEmpleado(RegistroEmpleadoRequest request, HttpServletRequest ht
         throw new RuntimeException("Error: El email '" + request.getEmail() + "' ya existe.");
     }
 
-    // 2. Crear Usuario base
     Usuario nuevo = new Usuario();
     nuevo.setUsername(request.getUsername());
     nuevo.setEmail(request.getEmail());
     nuevo.setPassword_hash(passwordEncoder.encode(request.getPassword()));
     
-    // --- EL ESTADO INICIA EN PENDIENTE PARA VERIFICACIÓN ---
     nuevo.setEstado("Pendiente");
     
-    // Aquí buscará "Recepción" en la BD y encontrará el ID 2
     nuevo.setRol(rolRepository.findByNombreRol(request.getRol())
             .orElseThrow(() -> new RuntimeException("Rol no encontrado: " + request.getRol())));
 
     Usuario usuarioGuardado = usuarioRepository.saveAndFlush(nuevo);
 
-    // 3. Lógica según el Rol
     if ("Groomer".equals(request.getRol())) {
         Groomer g = new Groomer();
         g.setUsuario(usuarioGuardado);
@@ -423,7 +387,6 @@ public void crearEmpleado(RegistroEmpleadoRequest request, HttpServletRequest ht
         recepcionistaRepository.save(r);
     }
     
-    // --- GENERAR TOKEN Y ENVIAR CORREO DE ACTIVACIÓN ---
     generarYEnviarToken(usuarioGuardado);
     
     registrarLog(obtenerUsuarioActual(), "REGISTRO_EMPLEADO: " + nuevo.getEmail(), httpRequest);
@@ -462,7 +425,6 @@ private Usuario obtenerUsuarioActual() {
         System.out.println("\n>>> [DEBUG] Iniciando activacion con contraseña...");
         System.out.println(">>> Token recibido: " + request.getToken());
 
-        // 1. Buscar token
         TokenActivacion tokenDb = tokenRepository.findByToken(request.getToken())
                 .orElseGet(() -> {
                     System.err.println(">>> [ERROR] El token no existe en la BD.");
@@ -471,21 +433,18 @@ private Usuario obtenerUsuarioActual() {
         
         if (tokenDb == null) throw new RuntimeException("Token inválido");
 
-        // 2. Validar expiración
         System.out.println(">>> Token encontrado para usuario: " + tokenDb.getUsuario().getEmail());
         if (java.time.LocalDateTime.now().isAfter(tokenDb.getFechaExpiracion())) {
             System.err.println(">>> [ERROR] El token ha expirado. Fecha limite: " + tokenDb.getFechaExpiracion());
             throw new RuntimeException("El link ha expirado.");
         }
 
-        // 3. Actualizar
         Usuario usuario = tokenDb.getUsuario();
         System.out.println(">>> Hasheando nueva contraseña y activando estado...");
         usuario.setPassword_hash(passwordEncoder.encode(request.getPassword()));
         usuario.setEstado("Activo");
         usuarioRepository.save(usuario);
 
-        // 4. Limpieza
         tokenRepository.delete(tokenDb);
         System.out.println(">>> [ÉXITO] Usuario " + usuario.getEmail() + " activado correctamente.\n");
 
@@ -493,14 +452,12 @@ private Usuario obtenerUsuarioActual() {
     }
 
 public PerfilEmpleadoDTO buscarPerfilEmpleado(Integer idUsuario) {
-    // 1. Buscamos el usuario base
     Usuario usuario = usuarioRepository.findById(idUsuario)
             .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
     
     PerfilEmpleadoDTO dto = new PerfilEmpleadoDTO();
     dto.setRol(usuario.getRol().getNombreRol());
 
-    // 2. Extraemos datos según el Rol
     if ("Groomer".equals(dto.getRol())) {
         Groomer g = groomerRepository.findByUsuario(usuario)
                 .orElseThrow(() -> new RuntimeException("Datos de Groomer no encontrados"));

@@ -45,14 +45,12 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         if (usuarioOpt.isEmpty()) {
             System.out.println("[DEBUG] El usuario no existe. Iniciando Auto-registro...");
             
-            // 1. Crear el Usuario
             Usuario nuevoUsuario = new Usuario();
             nuevoUsuario.setEmail(email);
             nuevoUsuario.setUsername(email);
             nuevoUsuario.setEstado("Activo"); 
             nuevoUsuario.setPassword_hash("OAUTH_USER_" + UUID.randomUUID().toString()); 
 
-            // Buscar el Rol Cliente (ID 4 según tu base de datos)
             Rol rolCliente = rolRepository.findByNombreRol("Cliente")
                 .orElseThrow(() -> new RuntimeException("Error: El Rol 'Cliente' no existe en la base de datos"));
             
@@ -60,8 +58,6 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             usuarioRepository.save(nuevoUsuario);
             System.out.println("[DEBUG] Usuario guardado con éxito.");
 
-            // 2. Crear el perfil de Cliente
-            // SOLUCIÓN: Llenamos CI, Apellido y otros campos obligatorios con placeholders
             Cliente nuevoCliente = new Cliente();
             nuevoCliente.setUsuario(nuevoUsuario);
             
@@ -70,8 +66,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             nuevoCliente.setApellido(apellidosGoogle != null ? apellidosGoogle : "Google");
 
 
-            // Datos obligatorios adicionales (CI, Teléfono, Dirección)
-            nuevoCliente.setCi("0"); // Solución al error: DataIntegrityViolationException en 'ci'
+            nuevoCliente.setCi("0");
             nuevoCliente.setTelefono("00000000"); 
             nuevoCliente.setDireccion("Por completar");
 

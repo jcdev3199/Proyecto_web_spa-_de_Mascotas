@@ -137,11 +137,29 @@ const actualizarPerfil = async () => {
   loading.value = true;
   try {
     const id = authState.user.id_usuario;
-    await axios.put(`http://localhost:8080/api/empleado/perfil/${id}`, perfil.value);
+
+    // Construimos el molde exacto en singular que el DTO del Backend espera recibir
+    const payload = {
+      nombre: perfil.value.nombres,      // Mapea 'nombres' (plural) a 'nombre' (singular)
+      apellido: perfil.value.apellidos,  // Mapea 'apellidos' (plural) a 'apellido' (singular)
+      telefono: perfil.value.telefono,
+      especialidad: perfil.value.especialidad,
+      turno: perfil.value.turno,
+      capacidadSimultanea: parseInt(perfil.value.capacidadSimultanea), // Asegura que sea un entero
+      horaEntrada: perfil.value.horaEntrada,
+      horaSalida: perfil.value.horaSalida
+    };
+
+    console.log(">>> [DEBUG FRONTEND] Enviando payload corregido en singular:", payload);
+
+    // Enviamos el payload estructurado en lugar del objeto perfil.value directo
+    await axios.put(`http://localhost:8080/api/empleado/perfil/${id}`, payload);
+    
     alert("✅ Perfil actualizado correctamente.");
     modoEdicion.value = false;
     await cargarDatos();
   } catch (err) {
+    console.error(">>> [ERROR FRONTEND] Fallo al actualizar:", err.response?.data || err.message);
     alert("Error al actualizar: " + (err.response?.data || "Servidor no disponible"));
   } finally {
     loading.value = false;
